@@ -1,0 +1,1 @@
+export const SIZE_OPTIONS = ["30x40", "40x60", "50x70", "60x80", "70x100"] as const;

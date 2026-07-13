@@ -1,0 +1,155 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String     @id @default(cuid())
+  name         String
+  phone        String?
+  email        String?    @unique
+  passwordHash String
+  role         UserRole   @default(STAFF)
+  status       UserStatus @default(ACTIVE)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  tasks     Task[]
+  templates AiTemplate[]
+}
+
+model Task {
+  id            String         @id @default(cuid())
+  taskNo        String         @unique
+  customerName  String?
+  customerPhone String?
+  orderNo       String?
+  platform      PlatformSource
+  sizeMode      SizeMode       @default(PRESET)
+  sizePreset    String?
+  customWidth   Int?
+  customHeight  Int?
+  status        TaskStatus     @default(WAITING_SUBMIT)
+
+  templateId String?
+  template   AiTemplate? @relation(fields: [templateId], references: [id])
+
+  createdById String
+  createdBy   User   @relation(fields: [createdById], references: [id])
+
+  images      TaskImage[]
+  generations AiGeneration[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([createdById])
+  @@index([status])
+  @@index([platform])
+  @@index([createdAt])
+  @@index([orderNo])
+}
+
+model TaskImage {
+  id        String        @id @default(cuid())
+  taskId    String
+  task      Task          @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  type      TaskImageType
+  fileName  String
+  filePath  String
+  mimeType  String
+  fileSize  Int
+  width     Int?
+  height    Int?
+  createdAt DateTime      @default(now())
+
+  @@index([taskId])
+  @@index([type])
+}
+
+model AiTemplate {
+  id             String  @id @default(cuid())
+  name           String
+  description    String?
+  prompt         String
+  negativePrompt String?
+  sortOrder      Int     @default(0)
+  isDefault      Boolean @default(false)
+  isActive       Boolean @default(true)
+
+  createdById String?
+  createdBy   User?   @relation(fields: [createdById], references: [id])
+
+  tasks       Task[]
+  generations AiGeneration[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive])
+  @@index([sortOrder])
+}
+
+model AiGeneration {
+  id              String     @id @default(cuid())
+  taskId          String
+  task            Task       @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  templateId      String?
+  template        AiTemplate? @relation(fields: [templateId], references: [id])
+  provider        String?
+  externalJobId   String?
+  status          TaskStatus @default(WAITING_SUBMIT)
+  requestPayload  Json?
+  responsePayload Json?
+  errorMessage    String?
+  startedAt       DateTime?
+  completedAt     DateTime?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  @@index([taskId])
+  @@index([status])
+  @@index([externalJobId])
+}
+
+enum UserRole {
+  ADMIN
+  STAFF
+}
+
+enum UserStatus {
+  ACTIVE
+  DISABLED
+}
+
+enum PlatformSource {
+  TAOBAO
+  PINDUODUO
+  CN_1688
+  WECHAT
+  DOUYIN
+  XIAOHONGSHU
+  OTHER
+}
+
+enum SizeMode {
+  PRESET
+  CUSTOM
+}
+
+enum TaskStatus {
+  WAITING_SUBMIT
+  SUBMITTED
+  PROCESSING
+  SUCCEEDED
+  FAILED
+}
+
+enum TaskImageType {
+  ORIGINAL
+  GENERATED
+}

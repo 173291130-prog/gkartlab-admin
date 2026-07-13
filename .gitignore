@@ -1,0 +1,41 @@
+# dependencies
+node_modules/
+
+# next.js
+.next/
+out/
+next-env.d.ts
+tsconfig.tsbuildinfo
+
+# environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# databases
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+prisma/*.db
+prisma/*.db-*
+data/
+
+# user files
+storage/uploads/*
+storage/generated/*
+!storage/uploads/.gitkeep
+!storage/generated/.gitkeep
+
+# logs and runtime files
+*.log
+logs/
+work/
+outputs/
+
+# local tools and editor files
+tools/
+.agents/
+.codex/
+.DS_Store
+Thumbs.db
