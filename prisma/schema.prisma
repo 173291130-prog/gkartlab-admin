@@ -28,6 +28,8 @@ model Task {
   customerName  String?
   customerPhone String?
   orderNo       String?
+  requestedWidth  Int?
+  requestedHeight Int?
   platform      PlatformSource
   sizeMode      SizeMode       @default(PRESET)
   sizePreset    String?

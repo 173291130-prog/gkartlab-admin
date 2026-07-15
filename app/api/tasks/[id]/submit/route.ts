@@ -4,11 +4,13 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/client";
 import { saveGeneratedImageFromDataUrl, saveGeneratedImageFromRemoteUrl } from "@/lib/storage/local";
 
-export async function POST(_: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const user = await getCurrentUser();
   if (!user) return fail("UNAUTHORIZED", "未登录", 401);
 
   const { id } = await params;
+  const body = await request.json().catch(() => ({}));
+  const revisionPrompt = typeof body?.revisionPrompt === "string" ? body.revisionPrompt.trim() : "";
   const task = await prisma.task.findFirst({
     where: { id },
     include: {
@@ -23,12 +25,20 @@ export async function POST(_: Request, { params }: { params: Promise<{ id: strin
   const original = task.images.find((image) => image.type === "ORIGINAL");
   if (!original) return fail("MISSING_IMAGE", "请先上传原图");
 
+  const latestGenerated = task.images.find((image) => image.type === "GENERATED");
+  const referenceImage = revisionPrompt ? latestGenerated : original;
+  if (!referenceImage) return fail("MISSING_GENERATED_IMAGE", "请先生成图片后，再填写修改意见继续修改");
+
+  const requestedSize = { width: task.requestedWidth, height: task.requestedHeight };
   const baseRequestPayload = {
-    imageUrl: original.filePath,
+    imageUrl: referenceImage.filePath,
+    referenceType: revisionPrompt ? "GENERATED" : "ORIGINAL",
     prompt: task.template.prompt,
+    revisionPrompt: revisionPrompt || undefined,
     negativePrompt: task.template.negativePrompt,
+    requestedSize,
     size: { preset: task.sizePreset, width: task.customWidth, height: task.customHeight },
-    sourceImage: { width: original.width, height: original.height },
+    sourceImage: { width: referenceImage.width, height: referenceImage.height },
   };
 
   const generation = await prisma.aiGeneration.create({
@@ -42,11 +52,13 @@ export async function POST(_: Request, { params }: { params: Promise<{ id: strin
   });
 
   const result = await submitGenerate({
-    imageUrl: original.filePath,
+    imageUrl: referenceImage.filePath,
     prompt: task.template.prompt,
+    revisionPrompt: revisionPrompt || undefined,
     negativePrompt: task.template.negativePrompt,
+    requestedSize,
     size: { preset: task.sizePreset, width: task.customWidth, height: task.customHeight },
-    sourceImage: { width: original.width, height: original.height },
+    sourceImage: { width: referenceImage.width, height: referenceImage.height },
     metadata: { taskId: task.id, generationId: generation.id },
   });
 

@@ -2,6 +2,11 @@ export type AiGenerateInput = {
   imageUrl: string;
   prompt: string;
   negativePrompt?: string | null;
+  revisionPrompt?: string | null;
+  requestedSize?: {
+    width?: number | null;
+    height?: number | null;
+  };
   size: {
     width?: number | null;
     height?: number | null;

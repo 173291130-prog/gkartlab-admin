@@ -47,11 +47,15 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ id:
             <Info label="客户姓名" value={task.customerName || "-"} />
             <Info label="联系电话" value={task.customerPhone || "-"} />
             <Info label="订单号" value={task.orderNo || "-"} />
+            <Info
+              label="顾客要的尺寸"
+              value={task.requestedWidth && task.requestedHeight ? `${task.requestedWidth}x${task.requestedHeight}` : "-"}
+            />
             <Info label="平台来源" value={platformLabel(task.platform)} />
             <Info label="客服" value={task.createdBy.name} />
             <Info label="创建时间" value={formatDate(task.createdAt)} />
             <Info label="模板" value={task.template?.name || "-"} />
-            <Info label="尺寸" value={task.sizeMode === "CUSTOM" ? `${task.customWidth}x${task.customHeight}` : task.sizePreset || "-"} />
+            <Info label="AI尺寸" value={task.sizeMode === "CUSTOM" ? `${task.customWidth}x${task.customHeight}` : task.sizePreset || "-"} />
           </CardContent>
         </Card>
 
@@ -63,7 +67,7 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ id:
         </div>
 
         <div className="flex gap-3">
-          <TaskActions taskId={task.id} canRegenerate={canRegenerate} />
+          <TaskActions taskId={task.id} canRegenerate={canRegenerate} hasGenerated={Boolean(generated)} />
           {generated ? (
             <Button asChild variant="outline">
               <Link href={generated.filePath} download>

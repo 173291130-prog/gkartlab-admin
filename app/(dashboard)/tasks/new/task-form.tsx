@@ -111,6 +111,8 @@ export function NewTaskForm({ templates }: { templates: AiTemplate[] }) {
           customerName: form.get("customerName") || undefined,
           customerPhone: form.get("customerPhone") || undefined,
           orderNo: form.get("orderNo") || undefined,
+          requestedWidth: form.get("requestedWidth") || undefined,
+          requestedHeight: form.get("requestedHeight") || undefined,
           platform,
           templateId,
           sizeMode,
@@ -172,6 +174,14 @@ export function NewTaskForm({ templates }: { templates: AiTemplate[] }) {
             <Input name="customerPhone" placeholder="联系电话，可选" />
             <Input name="orderNo" placeholder="订单号，可选" />
             <Select value={platform} onValueChange={setPlatform} options={[...PLATFORM_OPTIONS]} />
+            <div className="col-span-2">
+              <div className="mb-2 text-sm font-medium">顾客要的尺寸</div>
+              <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+                <Input name="requestedWidth" type="number" min="1" placeholder="宽" />
+                <span className="text-sm text-muted-foreground">*</span>
+                <Input name="requestedHeight" type="number" min="1" placeholder="高" />
+              </div>
+            </div>
           </CardContent>
         </Card>
 

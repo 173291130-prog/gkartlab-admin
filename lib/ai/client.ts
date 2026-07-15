@@ -147,6 +147,11 @@ function buildPrompt(input: AiGenerateInput) {
   const aspectRatio = getAspectRatio(input);
   const sizeText = buildSizeText(input);
   const ratioText = aspectRatio ? `输出画幅比例必须保持 ${aspectRatio}，不要裁切，不要改变横竖构图。` : "";
+  const requestedSizeText =
+    input.requestedSize?.width && input.requestedSize?.height
+      ? `调整为适应${input.requestedSize.width}*${input.requestedSize.height}的尺寸。`
+      : "";
+  const revisionText = input.revisionPrompt ? `顾客修改意见：${input.revisionPrompt}` : "";
   const referenceText = [
     "必须以参考图片为唯一内容来源进行改图。",
     "保留参考图里的主体类别、数量、姿态、位置、构图边界、颜色关系和整体内容。",
@@ -154,12 +159,15 @@ function buildPrompt(input: AiGenerateInput) {
     "如果参考图是宠物、商品、风景、插画或人物，就保持原来的内容类型和主体身份。",
   ].join("");
 
-  return [referenceText, input.prompt, ratioText, input.negativePrompt ? `避免: ${input.negativePrompt}` : "", sizeText]
+  return [referenceText, input.prompt, requestedSizeText, revisionText, ratioText, input.negativePrompt ? `避免: ${input.negativePrompt}` : "", sizeText]
     .filter(Boolean)
     .join("\n");
 }
 
 function buildSizeText(input: AiGenerateInput) {
+  if (input.requestedSize?.width && input.requestedSize?.height) {
+    return `顾客要的尺寸: ${input.requestedSize.width}x${input.requestedSize.height}`;
+  }
   if (input.size.preset === "auto") return "尺寸: 按上传原图尺寸比例输出。";
   if (input.size.preset) return `尺寸: ${input.size.preset}`;
   if (input.size.width && input.size.height) return `尺寸: ${input.size.width}x${input.size.height}`;
@@ -170,7 +178,10 @@ function getAspectRatio(input: AiGenerateInput) {
   let width: number | null | undefined;
   let height: number | null | undefined;
 
-  if (input.size.preset === "auto") {
+  if (input.requestedSize?.width && input.requestedSize?.height) {
+    width = input.requestedSize.width;
+    height = input.requestedSize.height;
+  } else if (input.size.preset === "auto") {
     width = input.sourceImage?.width;
     height = input.sourceImage?.height;
   } else if (input.size.preset) {
