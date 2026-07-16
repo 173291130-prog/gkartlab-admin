@@ -231,12 +231,12 @@ export function NewTaskForm({ templates }: { templates: AiTemplate[] }) {
                 </div>
                 <div className="mt-4 grid grid-cols-[1fr_auto_1fr] items-end gap-3">
                   <div>
-                    <label className="mb-1 block text-xs text-muted-foreground">输入宽度</label>
+                    <label className="mb-1 block text-xs text-muted-foreground">比例换算宽度</label>
                     <Input type="number" min="0" step="0.1" value={calcWidth} onChange={(event) => updateCalcWidth(event.target.value)} />
                   </div>
                   <div className="pb-2 text-sm text-muted-foreground">=</div>
                   <div>
-                    <label className="mb-1 block text-xs text-muted-foreground">输入高度</label>
+                    <label className="mb-1 block text-xs text-muted-foreground">比例换算高度</label>
                     <Input type="number" min="0" step="0.1" value={calcHeight} onChange={(event) => updateCalcHeight(event.target.value)} />
                   </div>
                 </div>
