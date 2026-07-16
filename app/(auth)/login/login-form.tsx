@@ -7,8 +7,8 @@ import { Input } from "@/components/ui/input";
 
 export function LoginForm() {
   const router = useRouter();
-  const [account, setAccount] = useState("admin@example.com");
-  const [password, setPassword] = useState("admin123456");
+  const [account, setAccount] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -35,11 +35,16 @@ export function LoginForm() {
     <form onSubmit={submit} className="space-y-4">
       <div>
         <label className="mb-1 block text-sm font-medium">账号</label>
-        <Input value={account} onChange={(event) => setAccount(event.target.value)} />
+        <Input value={account} onChange={(event) => setAccount(event.target.value)} placeholder="请输入账号" />
       </div>
       <div>
         <label className="mb-1 block text-sm font-medium">密码</label>
-        <Input type="password" value={password} onChange={(event) => setPassword(event.target.value)} />
+        <Input
+          type="password"
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+          placeholder="请输入密码"
+        />
       </div>
       {error ? <div className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div> : null}
       <Button className="w-full" disabled={loading}>

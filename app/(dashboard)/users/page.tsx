@@ -21,9 +21,8 @@ export default async function UsersPage() {
             <table className="w-full text-sm">
               <thead className="border-b border-border bg-muted/50 text-left text-muted-foreground">
                 <tr>
-                  <th className="px-5 py-3">姓名</th>
-                  <th className="px-5 py-3">手机号</th>
-                  <th className="px-5 py-3">邮箱</th>
+                  <th className="px-5 py-3">名称</th>
+                  <th className="px-5 py-3">账号</th>
                   <th className="px-5 py-3">角色</th>
                   <th className="px-5 py-3">状态</th>
                   <th className="px-5 py-3">创建时间</th>
@@ -33,7 +32,6 @@ export default async function UsersPage() {
                 {users.map((item) => (
                   <tr key={item.id} className="border-b border-border last:border-0">
                     <td className="px-5 py-3 font-medium">{item.name}</td>
-                    <td className="px-5 py-3">{item.phone || "-"}</td>
                     <td className="px-5 py-3">{item.email || "-"}</td>
                     <td className="px-5 py-3">{item.role === "ADMIN" ? "管理员" : "客服"}</td>
                     <td className="px-5 py-3">{item.status === "ACTIVE" ? "启用" : "禁用"}</td>
