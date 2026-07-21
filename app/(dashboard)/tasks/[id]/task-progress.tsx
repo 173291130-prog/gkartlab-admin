@@ -28,7 +28,9 @@ export function TaskProgress({ taskId, initialStatus, latestError }: TaskProgres
     if (!isActive) return;
 
     let stopped = false;
-    const timer = window.setInterval(async () => {
+    let timer: number | undefined;
+
+    async function refreshStatus() {
       try {
         const response = await fetch(`/api/tasks/${taskId}/refresh`, { method: "POST" });
         const data = await response.json().catch(() => null);
@@ -51,17 +53,20 @@ export function TaskProgress({ taskId, initialStatus, latestError }: TaskProgres
         }
 
         if (nextStatus === "SUCCEEDED" || nextStatus === "FAILED") {
-          window.clearInterval(timer);
+          if (timer) window.clearInterval(timer);
           router.refresh();
         }
       } catch {
         setError("本次状态刷新失败，系统会继续自动重试。");
       }
-    }, 8000);
+    }
+
+    refreshStatus();
+    timer = window.setInterval(refreshStatus, 5000);
 
     return () => {
       stopped = true;
-      window.clearInterval(timer);
+      if (timer) window.clearInterval(timer);
     };
   }, [isActive, router, taskId]);
 
@@ -71,7 +76,7 @@ export function TaskProgress({ taskId, initialStatus, latestError }: TaskProgres
         icon: <CheckCircle2 className="h-5 w-5 text-emerald-600" />,
         className: "border-emerald-200 bg-emerald-50 text-emerald-900",
         title: "生成成功",
-        description: "生成图已保存，页面会自动展示结果。",
+        description: "生成图已保存，页面会自动显示结果。",
       };
     }
 
@@ -89,7 +94,7 @@ export function TaskProgress({ taskId, initialStatus, latestError }: TaskProgres
         icon: <Loader2 className="h-5 w-5 animate-spin text-amber-600" />,
         className: "border-amber-200 bg-amber-50 text-amber-950",
         title: status === "SUBMITTED" ? "已提交，等待 AI 开始处理" : "AI 正在生成中",
-        description: error || `系统会自动刷新状态，生成完成后自动显示结果。已自动刷新 ${pollCount} 次。`,
+        description: error || `系统正在自动刷新结果，生成完成后会自动显示。已刷新 ${pollCount} 次。`,
       };
     }
 

@@ -70,13 +70,23 @@ export async function saveGeneratedImageFromDataUrl(dataUrl: string) {
 }
 
 export async function saveGeneratedImageFromRemoteUrl(url: string) {
-  const response = await fetch(url).catch(() => null);
+  const response = await fetchWithTimeout(url, Number(process.env.GENERATED_IMAGE_DOWNLOAD_TIMEOUT_MS ?? 8000)).catch(() => null);
   if (!response?.ok) return null;
 
   return saveGeneratedImage({
     data: Buffer.from(await response.arrayBuffer()),
     mimeType: response.headers.get("content-type") ?? "image/png",
   });
+}
+
+async function fetchWithTimeout(url: string, timeoutMs: number) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 function mimeTypeToExt(mimeType?: string) {

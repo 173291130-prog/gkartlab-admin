@@ -81,6 +81,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 }
 
 async function persistGeneratedImage(taskId: string, imageUrl: string) {
+  const existing = await prisma.taskImage.findFirst({
+    where: { taskId, type: "GENERATED", filePath: imageUrl },
+  });
+  if (existing) return existing;
+
   const saved = imageUrl.startsWith("data:")
     ? await saveGeneratedImageFromDataUrl(imageUrl)
     : await saveGeneratedImageFromRemoteUrl(imageUrl);
