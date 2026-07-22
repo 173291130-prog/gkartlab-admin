@@ -12,6 +12,7 @@ import { requireUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/client";
 import { formatDate } from "@/lib/utils";
 import { TaskActions } from "./task-actions";
+import { TaskImage } from "./task-image";
 import { TaskProgress } from "./task-progress";
 
 export default async function TaskDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -147,8 +148,7 @@ function ImagePanel({
       <CardContent>
         <div className="flex aspect-[4/3] items-center justify-center rounded-lg bg-muted">
           {src ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={src} alt={title} className="max-h-full max-w-full rounded-md object-contain" />
+            <TaskImage src={src} title={title} />
           ) : (
             <span className="text-sm text-muted-foreground">{emptyText}</span>
           )}
