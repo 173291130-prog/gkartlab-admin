@@ -1,10 +1,20 @@
 import bcrypt from "bcryptjs";
 import { PrismaClient, UserRole } from "@prisma/client";
 
-const defaultTemplates = [
+type DefaultTemplate = {
+  id: string;
+  name: string;
+  description: string;
+  prompt: string;
+  negativePrompt: string;
+  sortOrder?: number;
+};
+
+const defaultTemplates: DefaultTemplate[] = [
   {
     id: "default-template-1",
     name: "厚涂油画",
+    sortOrder: 2,
     description: "生成厚涂油画质感效果图，用于3D UV肌理画打印，保持图案颜色不变。",
     prompt:
       "基于用户上传的参考图片进行改图，将原图转换为高质感厚涂油画风格，适用于3D UV肌理画打印。必须保留原图的主体类别、主体数量、姿态、位置、构图、边界、颜色关系和整体内容；如果原图是宠物就仍然是同一只宠物，如果是商品就仍然是同一件商品，如果是人物就保留人物身份特征。只改变绘画材质和笔触效果，不要自由创作，不要替换主体，不要新增人物、动物或无关物体。画面需要明显油画笔触、厚重颜料堆叠感、细腻肌理、自然光影和高级装饰画质感，整体清晰干净，适合打印成定制装饰画成品。",
@@ -14,6 +24,7 @@ const defaultTemplates = [
   {
     id: "default-template-2",
     name: "肌理画",
+    sortOrder: 1,
     description: "增强画布肌理和笔触层次，适合装饰画成品效果。",
     prompt:
       "基于用户上传的参考图片进行改图，转换为适合3D UV肌理画打印的艺术装饰画效果。保持原图主体内容、构图、比例和主要颜色不变，增强画面肌理、画布纹理、笔触层次和立体质感，画面清晰干净，适合成品打印。",
@@ -80,7 +91,7 @@ export async function seedDefaults(prisma: PrismaClient) {
         prompt: template.prompt,
         negativePrompt: template.negativePrompt,
         isDefault: true,
-        sortOrder: index + 1,
+        sortOrder: template.sortOrder ?? index + 1,
       },
       create: {
         id: template.id,
@@ -89,7 +100,7 @@ export async function seedDefaults(prisma: PrismaClient) {
         prompt: template.prompt,
         negativePrompt: template.negativePrompt,
         isDefault: true,
-        sortOrder: index + 1,
+        sortOrder: template.sortOrder ?? index + 1,
       },
     });
   }

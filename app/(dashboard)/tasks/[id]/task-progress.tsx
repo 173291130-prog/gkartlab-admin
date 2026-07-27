@@ -62,7 +62,7 @@ export function TaskProgress({ taskId, initialStatus, latestError }: TaskProgres
     }
 
     refreshStatus();
-    timer = window.setInterval(refreshStatus, 5000);
+    timer = window.setInterval(refreshStatus, 2000);
 
     return () => {
       stopped = true;
