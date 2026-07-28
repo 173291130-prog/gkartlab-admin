@@ -84,7 +84,18 @@ async function persistGeneratedImage(taskId: string, imageUrl: string) {
   const existing = await prisma.taskImage.findFirst({
     where: { taskId, type: "GENERATED", filePath: imageUrl },
   });
-  if (existing) return existing;
+  if (existing) {
+    if (existing.mimeType === "image/remote" && existing.fileSize === 0 && !imageUrl.startsWith("data:")) {
+      const savedExisting = await saveGeneratedImageFromRemoteUrl(imageUrl);
+      if (savedExisting) {
+        return prisma.taskImage.update({
+          where: { id: existing.id },
+          data: savedExisting,
+        });
+      }
+    }
+    return existing;
+  }
 
   const saved = imageUrl.startsWith("data:")
     ? await saveGeneratedImageFromDataUrl(imageUrl)

@@ -70,7 +70,7 @@ export async function saveGeneratedImageFromDataUrl(dataUrl: string) {
 }
 
 export async function saveGeneratedImageFromRemoteUrl(url: string) {
-  const response = await fetchWithTimeout(url, Number(process.env.GENERATED_IMAGE_DOWNLOAD_TIMEOUT_MS ?? 2000)).catch(() => null);
+  const response = await fetchWithTimeout(url, Number(process.env.GENERATED_IMAGE_DOWNLOAD_TIMEOUT_MS ?? 15000)).catch(() => null);
   if (!response?.ok) return null;
 
   return saveGeneratedImage({
