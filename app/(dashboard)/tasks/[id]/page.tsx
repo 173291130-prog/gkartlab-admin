@@ -34,6 +34,8 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ id:
   const generatedImages = task.images.filter((image) => image.type === "GENERATED");
   const generated =
     generatedImages.find((image) => image.filePath.startsWith("/api/files/generated/")) ?? generatedImages[0];
+  const originalSrc = toDisplayImageSrc(original?.filePath);
+  const generatedSrc = toDisplayImageSrc(generated?.filePath);
   const latestGeneration = task.generations[0];
   const canRegenerate = Boolean(
     original?.filePath && (/^https?:\/\//i.test(original.filePath) || process.env.AI_PUBLIC_BASE_URL),
@@ -65,15 +67,15 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ id:
         <TaskProgress taskId={task.id} initialStatus={task.status} latestError={latestGeneration?.errorMessage} />
 
         <div className="grid grid-cols-2 gap-6">
-          <ImagePanel title="原图" src={original?.filePath} width={original?.width} height={original?.height} emptyText="暂无原图" />
-          <ImagePanel title="生成图" src={generated?.filePath} width={generated?.width} height={generated?.height} emptyText="暂无生成结果" />
+          <ImagePanel title="原图" src={originalSrc} width={original?.width} height={original?.height} emptyText="暂无原图" />
+          <ImagePanel title="生成图" src={generatedSrc} width={generated?.width} height={generated?.height} emptyText="暂无生成结果" />
         </div>
 
         <div className="flex gap-3">
           <TaskActions taskId={task.id} canRegenerate={canRegenerate} hasGenerated={Boolean(generated)} />
           {generated ? (
             <Button asChild variant="outline">
-              <Link href={generated.filePath} download>
+              <Link href={generatedSrc ?? generated.filePath} download>
                 <Download className="h-4 w-4" />
                 下载生成图
               </Link>
@@ -158,6 +160,13 @@ function ImagePanel({
       </CardContent>
     </Card>
   );
+}
+
+function toDisplayImageSrc(src?: string | null) {
+  if (!src) return undefined;
+  if (src.startsWith("/")) return src;
+  if (!/^https?:\/\//i.test(src)) return src;
+  return `/api/image-proxy?src=${encodeURIComponent(src)}`;
 }
 
 function formatImageMeta(width: number, height: number) {

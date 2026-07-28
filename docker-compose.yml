@@ -11,6 +11,7 @@ services:
       - sqlite_data:/app/data
       - ./storage/uploads:/app/storage/uploads
       - ./storage/generated:/app/storage/generated
+      - ./storage/generated-proxy:/app/storage/generated-proxy
     ports:
       - "127.0.0.1:3000:3000"
     healthcheck:

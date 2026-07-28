@@ -15,7 +15,7 @@ export function TaskImage({ src, title }: { src: string; title: string }) {
       <div className="flex h-full w-full flex-col items-center justify-center gap-3 px-6 text-center">
         <div>
           <div className="text-sm font-medium text-foreground">图片加载失败</div>
-          <div className="mt-1 text-xs text-muted-foreground">可能是当前网络或浏览器缓存问题，可以重试或单独打开图片。</div>
+          <div className="mt-1 text-xs text-muted-foreground">可能是网络线路或图片地址临时不可达，可以重试或单独打开图片。</div>
         </div>
         <div className="flex flex-wrap justify-center gap-2">
           <Button
