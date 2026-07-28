@@ -31,7 +31,9 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ id:
   if (!task) notFound();
 
   const original = task.images.find((image) => image.type === "ORIGINAL");
-  const generated = task.images.find((image) => image.type === "GENERATED");
+  const generatedImages = task.images.filter((image) => image.type === "GENERATED");
+  const generated =
+    generatedImages.find((image) => image.filePath.startsWith("/api/files/generated/")) ?? generatedImages[0];
   const latestGeneration = task.generations[0];
   const canRegenerate = Boolean(
     original?.filePath && (/^https?:\/\//i.test(original.filePath) || process.env.AI_PUBLIC_BASE_URL),
