@@ -8,18 +8,17 @@ import { StatusBadge } from "@/components/common/status-badge";
 import { platformLabel } from "@/config/platforms";
 import { requireUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/client";
-import { formatDate } from "@/lib/utils";
+import { formatDate, getTodayRangeInAppTimeZone } from "@/lib/utils";
 
 export default async function DashboardPage() {
   const user = await requireUser();
   const baseWhere = user.role === UserRole.STAFF ? { createdById: user.id } : {};
-  const start = new Date();
-  start.setHours(0, 0, 0, 0);
+  const { start, end } = getTodayRangeInAppTimeZone();
 
   const [todayGeneratedCount, totalGeneratedCount, todaySucceededCount, recentTasks] = await Promise.all([
-    prisma.task.count({ where: { ...baseWhere, createdAt: { gte: start } } }),
+    prisma.task.count({ where: { ...baseWhere, createdAt: { gte: start, lt: end } } }),
     prisma.task.count({ where: baseWhere }),
-    prisma.task.count({ where: { ...baseWhere, createdAt: { gte: start }, status: "SUCCEEDED" } }),
+    prisma.task.count({ where: { ...baseWhere, createdAt: { gte: start, lt: end }, status: "SUCCEEDED" } }),
     prisma.task.findMany({
       where: baseWhere,
       include: { template: true },

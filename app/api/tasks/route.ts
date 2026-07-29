@@ -2,11 +2,11 @@ import { UserRole } from "@prisma/client";
 import { fail, ok } from "@/lib/api/response";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/client";
+import { formatDateStampInAppTimeZone } from "@/lib/utils";
 import { taskCreateSchema } from "@/lib/validators/task";
 
 function makeTaskNo() {
-  const date = new Date();
-  const stamp = `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, "0")}${String(date.getDate()).padStart(2, "0")}`;
+  const stamp = formatDateStampInAppTimeZone();
   return `AI${stamp}${Math.floor(Math.random() * 90000 + 10000)}`;
 }
 
