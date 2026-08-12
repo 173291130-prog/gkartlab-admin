@@ -63,7 +63,7 @@ export async function getGenerationStatus(externalJobId: string): Promise<AiStat
 
 async function submitVolcengineArk(input: AiGenerateInput, baseUrl: string, apiKey: string): Promise<AiSubmitResult> {
   const endpoint = process.env.AI_IMAGE_ENDPOINT ?? "/api/v3/images/generations";
-  const model = process.env.AI_IMAGE_MODEL ?? "doubao-seedream-5-0-260128";
+  const model = process.env.AI_IMAGE_MODEL ?? "doubao-seedream-5-0-lite-260128";
   const prompt = buildPrompt(input);
   const image = await buildVolcengineImageInput(input.imageUrl);
   const requestPayload: Record<string, unknown> = {
