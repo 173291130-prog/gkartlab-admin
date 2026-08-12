@@ -87,7 +87,7 @@ async function submitVolcengineArk(input: AiGenerateInput, baseUrl: string, apiK
     requestPayload.output_format = process.env.AI_OUTPUT_FORMAT ?? "png";
   }
 
-  const guidanceScale = process.env.AI_GUIDANCE_SCALE ?? "3.5";
+  const guidanceScale = process.env.AI_GUIDANCE_SCALE ?? "5.5";
   if (guidanceScale) requestPayload.guidance_scale = Number(guidanceScale);
 
   const stream = process.env.AI_STREAM;
