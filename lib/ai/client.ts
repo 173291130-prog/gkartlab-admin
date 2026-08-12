@@ -77,13 +77,15 @@ async function submitVolcengineArk(input: AiGenerateInput, baseUrl: string, apiK
   const requestPayload: Record<string, unknown> = {
     model,
     prompt,
-    size: process.env.AI_IMAGE_SIZE ?? "2K",
+    size: getVolcengineSize(model),
     response_format: process.env.AI_RESPONSE_FORMAT ?? "url",
-    output_format: process.env.AI_OUTPUT_FORMAT ?? "png",
     watermark: (process.env.AI_WATERMARK ?? "false") === "true",
   };
 
   requestPayload.image = [image];
+  if (supportsVolcengineOutputFormat(model)) {
+    requestPayload.output_format = process.env.AI_OUTPUT_FORMAT ?? "png";
+  }
 
   const guidanceScale = process.env.AI_GUIDANCE_SCALE ?? "3.5";
   if (guidanceScale) requestPayload.guidance_scale = Number(guidanceScale);
@@ -290,6 +292,21 @@ function parsePresetSize(preset?: string | null): { width: number; height: numbe
 
 function gcd(a: number, b: number): number {
   return b === 0 ? Math.abs(a) : gcd(b, a % b);
+}
+
+function getVolcengineSize(model: string) {
+  const configured = process.env.AI_IMAGE_SIZE;
+  if (configured) return configured;
+  if (isVolcengineEditModel(model)) return "adaptive";
+  return "2K";
+}
+
+function supportsVolcengineOutputFormat(model: string) {
+  return !isVolcengineEditModel(model);
+}
+
+function isVolcengineEditModel(model: string) {
+  return /seededit/i.test(model);
 }
 
 async function buildVolcengineImageInput(publicPath: string) {
