@@ -1,7 +1,7 @@
 import { readLocalFile } from "@/lib/storage/local";
 import { AiGenerateInput, AiStatusResult, AiSubmitResult } from "./types";
 
-const AI_TIMEOUT_MS = 30000;
+const AI_TIMEOUT_MS = Number(process.env.AI_TIMEOUT_MS ?? 60000);
 
 export async function submitGenerate(input: AiGenerateInput): Promise<AiSubmitResult> {
   const baseUrl = process.env.AI_API_BASE_URL;
@@ -15,6 +15,116 @@ export async function submitGenerate(input: AiGenerateInput): Promise<AiSubmitRe
     };
   }
 
+  const provider = process.env.AI_PROVIDER ?? "ovoai";
+  if (provider === "volcengine_ark") return submitVolcengineArk(input, baseUrl, apiKey);
+  return submitOvoai(input, baseUrl, apiKey);
+}
+
+export async function getGenerationStatus(externalJobId: string): Promise<AiStatusResult> {
+  const baseUrl = process.env.AI_API_BASE_URL;
+  const apiKey = process.env.AI_API_KEY;
+
+  if (!baseUrl || !apiKey || externalJobId.startsWith("mock-")) {
+    return { status: "PROCESSING", raw: { mock: true } };
+  }
+
+  if ((process.env.AI_PROVIDER ?? "ovoai") === "volcengine_ark") {
+    return { status: "PROCESSING", raw: { reason: "volcengine_ark image generation returns synchronously" } };
+  }
+
+  const statusEndpoint = process.env.AI_STATUS_ENDPOINT ?? "/v1/media/status?task_id=:id";
+
+  try {
+    const response = await fetchWithTimeout(joinUrl(baseUrl, statusEndpoint.replace(":id", externalJobId)), {
+      headers: { Authorization: `Bearer ${apiKey}` },
+    });
+
+    const data = await readJsonOrText(response);
+    if (!response.ok) {
+      return { status: "FAILED", errorMessage: typeof data === "string" ? data : data.message ?? "AI 状态查询失败", raw: data };
+    }
+
+    const imageUrl = extractImageUrl(data);
+
+    return {
+      status: imageUrl ? "SUCCEEDED" : normalizePollingStatus(data.state ?? data.status),
+      imageUrl,
+      errorMessage: data.errorMessage ?? data.error?.message ?? data.error,
+      raw: data,
+    };
+  } catch (error) {
+    return {
+      status: "PROCESSING",
+      errorMessage: error instanceof Error ? error.message : "AI 状态查询超时或网络异常",
+      raw: { transientError: true, error: String(error) },
+    };
+  }
+}
+
+async function submitVolcengineArk(input: AiGenerateInput, baseUrl: string, apiKey: string): Promise<AiSubmitResult> {
+  const endpoint = process.env.AI_IMAGE_ENDPOINT ?? "/api/v3/images/generations";
+  const model = process.env.AI_IMAGE_MODEL ?? "doubao-seedream-5-0-260128";
+  const prompt = buildPrompt(input);
+  const image = await buildVolcengineImageInput(input.imageUrl);
+  const requestPayload: Record<string, unknown> = {
+    model,
+    prompt,
+    size: process.env.AI_IMAGE_SIZE ?? "2K",
+    response_format: process.env.AI_RESPONSE_FORMAT ?? "url",
+    output_format: process.env.AI_OUTPUT_FORMAT ?? "png",
+    watermark: (process.env.AI_WATERMARK ?? "false") === "true",
+  };
+
+  if (image) requestPayload.image = [image];
+
+  const guidanceScale = process.env.AI_GUIDANCE_SCALE;
+  if (guidanceScale) requestPayload.guidance_scale = Number(guidanceScale);
+
+  const stream = process.env.AI_STREAM;
+  if (stream) requestPayload.stream = stream === "true";
+
+  const sequentialImageGeneration = process.env.AI_SEQUENTIAL_IMAGE_GENERATION;
+  if (sequentialImageGeneration) requestPayload.sequential_image_generation = sequentialImageGeneration;
+
+  try {
+    const response = await fetchWithTimeout(joinUrl(baseUrl, endpoint), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify(requestPayload),
+    });
+
+    const data = await readJsonOrText(response);
+    if (!response.ok) {
+      return {
+        status: "FAILED",
+        errorMessage: extractErrorMessage(data) ?? "火山方舟图片生成请求失败",
+        raw: data,
+        requestPayload,
+      };
+    }
+
+    const imageUrl = extractImageUrl(data);
+    return {
+      status: imageUrl ? "SUCCEEDED" : normalizeStatus(data.status ?? data.state ?? "PROCESSING"),
+      externalJobId: extractJobId(data),
+      imageUrl,
+      raw: data,
+      requestPayload,
+    };
+  } catch (error) {
+    return {
+      status: "FAILED",
+      errorMessage: error instanceof Error ? error.message : "火山方舟请求超时或网络异常",
+      raw: { error: String(error) },
+      requestPayload,
+    };
+  }
+}
+
+async function submitOvoai(input: AiGenerateInput, baseUrl: string, apiKey: string): Promise<AiSubmitResult> {
   const endpoint = process.env.AI_IMAGE_ENDPOINT ?? "/v1/media/generate";
   const model = process.env.AI_IMAGE_MODEL ?? "gpt-image-2";
   const prompt = buildPrompt(input);
@@ -35,7 +145,7 @@ export async function submitGenerate(input: AiGenerateInput): Promise<AiSubmitRe
     if (!imageInput) {
       return {
         status: "FAILED",
-        errorMessage: "本地图片还没有公网访问地址。请先接入 OSS/COS，或临时启用公网隧道。",
+        errorMessage: "本地图片还没有公网访问地址。请先配置 AI_PUBLIC_BASE_URL，或改用支持 base64 输入的 AI_PROVIDER。",
         raw: { reason: "PUBLIC_IMAGE_URL_REQUIRED" },
       };
     }
@@ -106,43 +216,6 @@ export async function submitGenerate(input: AiGenerateInput): Promise<AiSubmitRe
   }
 }
 
-export async function getGenerationStatus(externalJobId: string): Promise<AiStatusResult> {
-  const baseUrl = process.env.AI_API_BASE_URL;
-  const apiKey = process.env.AI_API_KEY;
-
-  if (!baseUrl || !apiKey || externalJobId.startsWith("mock-")) {
-    return { status: "PROCESSING", raw: { mock: true } };
-  }
-
-  const statusEndpoint = process.env.AI_STATUS_ENDPOINT ?? "/v1/media/status?task_id=:id";
-
-  try {
-    const response = await fetchWithTimeout(joinUrl(baseUrl, statusEndpoint.replace(":id", externalJobId)), {
-      headers: { Authorization: `Bearer ${apiKey}` },
-    });
-
-    const data = await readJsonOrText(response);
-    if (!response.ok) {
-      return { status: "FAILED", errorMessage: typeof data === "string" ? data : data.message ?? "AI 状态查询失败", raw: data };
-    }
-
-    const imageUrl = extractImageUrl(data);
-
-    return {
-      status: imageUrl ? "SUCCEEDED" : normalizePollingStatus(data.state ?? data.status),
-      imageUrl,
-      errorMessage: data.errorMessage ?? data.error?.message ?? data.error,
-      raw: data,
-    };
-  } catch (error) {
-    return {
-      status: "PROCESSING",
-      errorMessage: error instanceof Error ? error.message : "AI 状态查询超时或网络异常",
-      raw: { transientError: true, error: String(error) },
-    };
-  }
-}
-
 function buildPrompt(input: AiGenerateInput) {
   const aspectRatio = getAspectRatio(input);
   const sizeText = buildSizeText(input);
@@ -208,6 +281,19 @@ function parsePresetSize(preset?: string | null): { width: number; height: numbe
 
 function gcd(a: number, b: number): number {
   return b === 0 ? Math.abs(a) : gcd(b, a % b);
+}
+
+async function buildVolcengineImageInput(publicPath: string) {
+  const image = await readLocalFile(publicPath);
+  if (image) return `data:${detectImageMimeType(image)};base64,${image.toString("base64")}`;
+  return publicPath;
+}
+
+function detectImageMimeType(buffer: Buffer) {
+  if (buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) return "image/png";
+  if (buffer[0] === 0xff && buffer[1] === 0xd8) return "image/jpeg";
+  if (buffer.toString("ascii", 0, 4) === "RIFF" && buffer.toString("ascii", 8, 12) === "WEBP") return "image/webp";
+  return "image/png";
 }
 
 function formatLocalImageInput(image: Buffer, localPublicPath: string) {
@@ -286,6 +372,11 @@ function extractJobId(data: any): string | undefined {
     first?.request_id ??
     first?.task_ids?.[0];
   return jobId == null ? undefined : String(jobId);
+}
+
+function extractErrorMessage(data: any) {
+  if (typeof data === "string") return data;
+  return data?.error?.message ?? data?.message ?? data?.msg ?? data?.error;
 }
 
 function normalizeStatus(status: string): AiSubmitResult["status"] {

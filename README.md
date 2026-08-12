@@ -126,3 +126,25 @@ V1 使用本地 Docker Volume 存储图片。正式面向客户自助上传时�
 - CDN
 - PostgreSQL
 - 队列任务系统
+
+## Volcengine Ark Image Generation
+
+The AI channel can be switched with `AI_PROVIDER`.
+
+Example `.env` for Volcengine Ark:
+
+```env
+AI_PROVIDER=volcengine_ark
+AI_API_BASE_URL=https://ark.cn-beijing.volces.com
+AI_API_KEY=your-volcengine-ark-api-key
+AI_IMAGE_ENDPOINT=/api/v3/images/generations
+AI_IMAGE_MODEL=doubao-seedream-5-0-260128
+AI_IMAGE_SIZE=2K
+AI_RESPONSE_FORMAT=url
+AI_OUTPUT_FORMAT=png
+AI_WATERMARK=false
+AI_TIMEOUT_MS=60000
+GENERATED_IMAGE_DOWNLOAD_TIMEOUT_MS=30000
+```
+
+For this provider, local uploaded images are sent to Ark as `data:image/...;base64,...` inputs, then the returned generated image URL is downloaded and saved by this system.
