@@ -66,6 +66,14 @@ async function submitVolcengineArk(input: AiGenerateInput, baseUrl: string, apiK
   const model = process.env.AI_IMAGE_MODEL ?? "doubao-seedream-5-0-lite-260128";
   const prompt = buildPrompt(input);
   const image = await buildVolcengineImageInput(input.imageUrl);
+  if (!image) {
+    return {
+      status: "FAILED",
+      errorMessage: "没有读取到参考图，已停止提交，避免生成无关图片。请重新上传图片后再生成。",
+      raw: { reason: "REFERENCE_IMAGE_NOT_READABLE", imageUrl: input.imageUrl },
+    };
+  }
+
   const requestPayload: Record<string, unknown> = {
     model,
     prompt,
@@ -75,9 +83,9 @@ async function submitVolcengineArk(input: AiGenerateInput, baseUrl: string, apiK
     watermark: (process.env.AI_WATERMARK ?? "false") === "true",
   };
 
-  if (image) requestPayload.image = [image];
+  requestPayload.image = [image];
 
-  const guidanceScale = process.env.AI_GUIDANCE_SCALE;
+  const guidanceScale = process.env.AI_GUIDANCE_SCALE ?? "3.5";
   if (guidanceScale) requestPayload.guidance_scale = Number(guidanceScale);
 
   const stream = process.env.AI_STREAM;
@@ -226,10 +234,11 @@ function buildPrompt(input: AiGenerateInput) {
       : "";
   const revisionText = input.revisionPrompt ? `顾客修改意见：${input.revisionPrompt}` : "";
   const referenceText = [
-    "必须以参考图片为唯一内容来源进行改图。",
-    "保留参考图里的主体类别、数量、姿态、位置、构图边界、颜色关系和整体内容。",
-    "只把参考图转换成所选艺术效果，不要自由创作，不要替换主体，不要新增人物、动物或无关物体。",
-    "如果参考图是宠物、商品、风景、插画或人物，就保持原来的内容类型和主体身份。",
+    "这是图像改绘任务，不是文生图，不要重新创作一张新图片。",
+    "必须以参考图片作为唯一内容来源和构图来源，只允许改变绘画材质、笔触、肌理和艺术风格。",
+    "严格保留参考图里的主体类别、主体数量、主体外形、姿态、位置、构图边界、背景关系、主要颜色和整体内容。",
+    "如果参考图是商品，生成图必须仍然是同一件商品；如果是人物，必须保留同一个人物和动作；如果是宠物、风景或插画，也必须保留原图内容。",
+    "禁止把参考图替换成无关风景、无关人物、无关商品或自由想象画面。",
   ].join("");
 
   return [referenceText, input.prompt, requestedSizeText, revisionText, ratioText, input.negativePrompt ? `避免: ${input.negativePrompt}` : "", sizeText]
@@ -286,6 +295,7 @@ function gcd(a: number, b: number): number {
 async function buildVolcengineImageInput(publicPath: string) {
   const image = await readLocalFile(publicPath);
   if (image) return `data:${detectImageMimeType(image)};base64,${image.toString("base64")}`;
+  if (publicPath.startsWith("/api/files/")) return null;
   return publicPath;
 }
 
