@@ -302,7 +302,7 @@ function getVolcengineSize(model: string) {
 }
 
 function supportsVolcengineOutputFormat(model: string) {
-  return !isVolcengineEditModel(model);
+  return !isVolcengineEditModel(model) && !/seedream-4-5/i.test(model);
 }
 
 function isVolcengineEditModel(model: string) {
