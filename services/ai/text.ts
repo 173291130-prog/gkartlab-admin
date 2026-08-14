@@ -25,8 +25,8 @@ export async function generateVerifiedPetContent(facts:ProductFacts,historyTopic
 }
 
 async function requestStructured(name:string,schema:object,prompt:string){
-  const apiKey=process.env.AI_API_KEY; const base=(process.env.AI_API_BASE_URL||"").replace(/\/+$/,""); const model=process.env.TEXT_MODEL;
-  if(!base||!apiKey||!model)throw new AiTextError("AI_NOT_CONFIGURED","文字 AI 未配置：请检查 AI_API_BASE_URL、AI_API_KEY 和 TEXT_MODEL");
+  const apiKey=process.env.TEXT_API_KEY||process.env.AI_API_KEY; const base=(process.env.TEXT_API_BASE_URL||process.env.AI_API_BASE_URL||"").replace(/\/+$/,""); const model=process.env.TEXT_MODEL;
+  if(!base||!apiKey||!model)throw new AiTextError("AI_NOT_CONFIGURED","文字 AI 未配置：请检查 TEXT_API_BASE_URL、TEXT_API_KEY 和 TEXT_MODEL");
   const attempts=[()=>callResponses(base,apiKey,model,name,schema,prompt),()=>callChatCompletions(base,apiKey,model,name,schema,prompt,true),()=>callChatCompletions(base,apiKey,model,name,schema,prompt,false)];
   let compatibilityError:unknown;
   for(const call of attempts){try{return await call();}catch(error){if(error instanceof AiTextError&&["AI_AUTH_ERROR","AI_BALANCE_ERROR","AI_MODEL_NOT_FOUND","AI_TIMEOUT"].includes(error.code))throw error;compatibilityError=error;}}
@@ -60,4 +60,4 @@ function parseModelJson(value:unknown){if(typeof value!=="string"||!value.trim()
 function buildGenerationPrompt(facts:ProductFacts,history:string[],published:string[],issues:string[]){const confirmed=Object.entries(facts).filter(([,v])=>v).map(([k,v])=>`${k}：${v}`).join("\n");return `你是宠物医疗耗材B端小红书内容策划。\n【唯一事实来源】\n${confirmed}\n【最高规则】只能使用产品资料库中明确存在的信息。资料库未提供的信息必须省略，不允许推测、补充或编造。禁止编造针长、流速、适用体重、疗效、临床效果、治疗承诺、认证和厂家宣传参数。\n【历史选题，不得重复】\n${history.join("\n")||"暂无"}\n【最近已发布内容，避免高度相似】\n${published.join("\n---\n")||"暂无"}\n生成1个新选题、3个专业真实标题、正文、标签和严格5张图片方案。图片类型依次为cover、product、knowledge、scene、purchase。不得夸大宣传或保证医疗效果。${issues.length?`\n上次审核问题，必须修正：${issues.join("；")}`:""}`;}
 function buildTruthCheckPrompt(facts:ProductFacts,history:string[],published:string[],content:PetContentResult){return `你是严格的医疗耗材内容审核员。检查：是否出现资料库不存在的参数；是否夸大宣传或承诺治疗效果；是否虚假医疗表述；是否修改品牌、产品名、规格；是否与历史选题或已发布内容高度重复。\n资料：${JSON.stringify(facts)}\n历史选题：${JSON.stringify(history)}\n已发布内容：${JSON.stringify(published)}\n候选：${JSON.stringify(content)}\n无问题时passed=true且issues=[]。`}
 export function getTextModelName(){return process.env.TEXT_MODEL||"";}
-export function getTextAiConfig(){const key=process.env.AI_API_KEY||"";return{configured:Boolean(process.env.AI_API_BASE_URL&&key&&process.env.TEXT_MODEL),baseUrl:process.env.AI_API_BASE_URL||"",model:process.env.TEXT_MODEL||"",maskedKey:key?`${key.slice(0,3)}****${key.slice(-4)}`:""};}
+export function getTextAiConfig(){const key=process.env.TEXT_API_KEY||process.env.AI_API_KEY||"";const baseUrl=process.env.TEXT_API_BASE_URL||process.env.AI_API_BASE_URL||"";return{configured:Boolean(baseUrl&&key&&process.env.TEXT_MODEL),baseUrl,model:process.env.TEXT_MODEL||"",maskedKey:key?`${key.slice(0,3)}****${key.slice(-4)}`:""};}

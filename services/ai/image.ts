@@ -1,7 +1,7 @@
 export function getPetImageModelConfig() {
   return {
-    baseUrl: process.env.AI_API_BASE_URL || "",
-    apiKeyConfigured: Boolean(process.env.AI_API_KEY),
+    baseUrl: process.env.IMAGE_API_BASE_URL || process.env.AI_API_BASE_URL || "",
+    apiKeyConfigured: Boolean(process.env.IMAGE_API_KEY || process.env.AI_API_KEY),
     model: process.env.IMAGE_MODEL || "",
   };
 }
