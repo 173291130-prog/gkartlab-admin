@@ -8,6 +8,7 @@ const nav = [
   { href: "/tasks/new", label: "肌理画新建任务", icon: ImagePlus },
   { href: "/tasks", label: "肌理画任务历史", icon: History },
   { href: "/templates", label: "模板管理", icon: Settings, admin: true },
+  { href: "/settings", label: "系统设置", icon: Settings, admin: true },
   { href: "/users", label: "账号管理", icon: Users, admin: true },
   { href: "/admin", label: "后台管理", icon: BarChart3, admin: true },
 ];
